@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# === Configuration ===
+STEAM_APPS_DIR=""
+LOG_DIR="/tmp/electronhax_logs"
+CE_PATH=""
+
+if [[ ! -d $LOG_DIR ]]; then
+    mkdir -p "$LOG_DIR" # Ensure log directory exists
+fi
+
+# === Functions ===
+
+get_game_name() {
+    local appid="$1"
+    local manifest="$STEAM_APPS_DIR/appmanifest_${appid}.acf"
+    if [[ -f "$manifest" ]]; then
+        grep '"name"' "$manifest" | sed -E 's/.*"name"\s+"(.*)"/\1/'
+    else
+        echo "Unknown ($appid)"
+    fi
+}
+
+check_requirements() {
+    local missing=0
+    for cmd in dialog electronhax pkill; do
+        if ! command -v "$cmd" &>/dev/null; then
+            echo "Error: '$cmd' is not installed." >&2
+            missing=1
+        fi
+    done
+    if [[ ! -f "$CE_PATH" ]]; then
+        echo "Error: Cheat Engine not found at: $CE_PATH" >&2
+        missing=1
+    fi
+    if (( missing )); then
+        exit 1
+    fi
+}
+
+select_game() {
+    local menu_items=()
+    local app_ids
+    app_ids=$(electronhax ls 2>/dev/null)
+
+    if [[ -z "$app_ids" ]]; then
+        dialog --msgbox "No running Proton games found." 8 40
+        clear
+        exit 1
+    fi
+
+    while IFS= read -r appid; do
+        [[ -z "$appid" ]] && continue
+        local gamename
+        gamename=$(get_game_name "$appid")
+        menu_items+=("$appid" "$gamename")
+    done <<< "$app_ids"
+
+    CHOICE=$(
+        dialog --clear \
+            --title "Select Running Game" \
+            --menu "Choose a Proton game to attach Cheat Engine:" \
+            20 70 15 \
+            "${menu_items[@]}" \
+            3>&1 1>&2 2>&3
+    )
+    clear
+}
+
+kill_cheat_engine_processes() {
+    pkill -f "cheat" 2>/dev/null || true
+}
+
+cleanup_old_logs() {
+    find "$LOG_DIR" -type f -name "*.log" -mtime +1 -exec rm -f {} \; 2>/dev/null
+}
+
+launch_cheat_engine() {
+    kill_cheat_engine_processes
+    cleanup_old_logs
+
+    local game_name
+    game_name=$(get_game_name "$CHOICE" | tr ' ' '_' | tr -dc '[:alnum:]_')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
+    local log_file="$LOG_DIR/CheatEngine_${game_name}_${CHOICE}_${timestamp}.log"
+
+    echo "Logging to: $log_file"
+    echo "Starting Cheat Engine..." > "$log_file"
+    echo "electronhax run \"$CHOICE\" \"$CE_PATH\"" >> "$log_file"
+    electronhax run "$CHOICE" "$CE_PATH" >> "$log_file" 2>&1 &
+}
+
+# === Main ===
+
+set -euo pipefail
+
+check_requirements
+select_game
+
+if [[ -n "${CHOICE:-}" ]]; then
+    launch_cheat_engine
+else
+    echo "No game selected."
+    exit 1
+fi

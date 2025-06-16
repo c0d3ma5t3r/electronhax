@@ -89,7 +89,16 @@ launch_cheat_engine() {
     echo "Starting Cheat Engine..." > "$log_file"
     echo "electronhax run \"$CHOICE\" \"$CE_PATH\"" >> "$log_file"
     electronhax run "$CHOICE" "$CE_PATH" >> "$log_file" 2>&1 &
+    local ce_pid=$!
+    echo "Cheat Engine started with PID: $ce_pid" >> "$log_file"
+    wait "$ce_pid"
+    cleanup_game
 }
+
+cleanup_game() {
+    rm -fr "${XDG_RUNTIME_DIR:-/run/user/$UID}/electronhax/${CHOICE}"
+}
+
 
 # === Main ===
 

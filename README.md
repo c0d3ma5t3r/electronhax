@@ -8,7 +8,7 @@ This script was inspired by the tech behind ["ProtonHax"](https://github.com/jcn
 Credit to the inital code base and work go [jcnils](https://github.com/jcnils)
 
 ## Installation
-- Put the "ElectronHax" folder in any $PATH locaiton
+- Put the `ElectronHax` folder and scripts in any $PATH locaiton
 
 ## Uninstall
 - Remove the "ElectronHax" folder from your $PATH

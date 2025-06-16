@@ -11,7 +11,7 @@ Credit to the inital code base and work go [jcnils](https://github.com/jcnils)
 - Put the `ElectronHax` folder and scripts in any $PATH locaiton
 
 ## Uninstall
-- Remove the "ElectronHax" folder from your $PATH
+- Remove the `ElectronHax` folder and scripts from your $PATH
 
 ## Usage
 #### * This will need to be done per-game
